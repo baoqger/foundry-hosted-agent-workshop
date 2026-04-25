@@ -27,6 +27,8 @@ if (!connection.TryGetLocatorAsUri(out Uri? openAiEndpoint) || openAiEndpoint is
 
 openAiEndpoint = new Uri($"https://{openAiEndpoint.Host}");
 
+Console.WriteLine($"Resolved Azure OpenAI endpoint: {openAiEndpoint}");
+
 var chatClient = new AzureOpenAIClient(openAiEndpoint, credential)
 	.GetChatClient(deploymentName)
 	.AsIChatClient()
