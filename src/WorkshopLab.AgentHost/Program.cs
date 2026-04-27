@@ -89,6 +89,6 @@ var agent = new ChatClientAgent(
 	.UseOpenTelemetry(sourceName: "WorkshopLab.Agent", configure: options => options.EnableSensitiveData = false)
 	.Build();
 
-Console.WriteLine("Hosted Agent Readiness Coach is listening on http://localhost:8088");
+Console.WriteLine("Hosted Agent Readiness Coach is listening on http://localhost:8088!");
 
 await agent.RunAIAgentAsync(telemetrySourceName: "WorkshopLab.Agent");
