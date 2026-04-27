@@ -10,7 +10,7 @@ param environmentName string
   'Standard'
   'Premium'
 ])
-param containerRegistrySku string = 'Standard'
+param containerRegistrySku string = 'Basic'
 
 var registryNameBase = 'workshoplab${replace(toLower(environmentName), '-', '')}${uniqueString(subscription().subscriptionId, resourceGroup().id)}'
 var containerRegistryName = take(registryNameBase, 50)
@@ -35,7 +35,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
       }
       retentionPolicy: {
         days: 7
-        status: 'enabled'
+        status: 'disabled'
       }
       trustPolicy: {
         type: 'Notary'
@@ -46,7 +46,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
       }
       softDeletePolicy: {
         retentionDays: 7
-        status: 'enabled'
+        status: 'disabled'
       }
     }
   }
