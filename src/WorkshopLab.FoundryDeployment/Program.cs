@@ -10,7 +10,7 @@ var arguments = ParseArguments(args);
 
 string projectEndpoint = GetRequiredValue(arguments, "project-endpoint", "AZURE_AI_PROJECT_ENDPOINT");
 string agentName = GetOptionalValue(arguments, "agent-name", null) ?? Path.GetRandomFileName().Replace(".", "");
-string manifestPath = GetOptionalValue(arguments, "manifest", null);
+string? manifestPath = GetOptionalValue(arguments, "manifest", null);
 string? agentDefinitionJson = GetOptionalValue(arguments, "agent-definition", null);
 string? agentId = GetOptionalValue(arguments, "agent-id", "FOUNDRY_AGENT_ID");
 
@@ -24,6 +24,7 @@ if (!string.IsNullOrWhiteSpace(agentDefinitionJson))
     // Use provided agent definition directly
     finalDefinitionJson = agentDefinitionJson;
     Console.WriteLine($"Using provided agent definition for agent '{agentName}'");
+    Console.WriteLine($"finalDefinitionJson: {finalDefinitionJson}");
 }
 else if (!string.IsNullOrWhiteSpace(manifestPath))
 {

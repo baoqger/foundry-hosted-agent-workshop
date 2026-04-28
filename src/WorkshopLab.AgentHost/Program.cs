@@ -8,10 +8,9 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using WorkshopLab.Core;
 
-var projectEndpoint = Environment.GetEnvironmentVariable("AZURE_AI_PROJECT_ENDPOINT")
-	?? throw new InvalidOperationException("AZURE_AI_PROJECT_ENDPOINT is not set.");
-
-var deploymentName = Environment.GetEnvironmentVariable("MODEL_DEPLOYMENT_NAME") ?? "gpt-4.1-mini";
+var settings = LoadSettingsFromDotEnv();
+var projectEndpoint = GetRequiredSetting(settings, "AZURE_AI_PROJECT_ENDPOINT");
+var deploymentName = GetOptionalSetting(settings, "MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini");
 
 Console.WriteLine($"WorkshopLab Agent Host starting for project: {projectEndpoint}");
 Console.WriteLine($"Using deployment: {deploymentName}");
@@ -92,3 +91,97 @@ var agent = new ChatClientAgent(
 Console.WriteLine("Hosted Agent Readiness Coach is listening on http://localhost:8088!");
 
 await agent.RunAIAgentAsync(telemetrySourceName: "WorkshopLab.Agent");
+
+static string GetRequiredSetting(IReadOnlyDictionary<string, string> settings, string key)
+{
+	return settings.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+		? value
+		: throw new InvalidOperationException($"{key} is not set in the local .env file.");
+}
+
+static string GetOptionalSetting(IReadOnlyDictionary<string, string> settings, string key, string defaultValue)
+{
+	return settings.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+		? value
+		: defaultValue;
+}
+
+static IReadOnlyDictionary<string, string> LoadSettingsFromDotEnv()
+{
+	var dotEnvPath = FindDotEnvFile()
+		?? throw new InvalidOperationException("No .env file was found for WorkshopLab.AgentHost.");
+
+	var settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+	foreach (var rawLine in File.ReadAllLines(dotEnvPath))
+	{
+		var line = rawLine.Trim();
+		if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+		{
+			continue;
+		}
+
+		if (line.StartsWith("export ", StringComparison.OrdinalIgnoreCase))
+		{
+			line = line["export ".Length..].Trim();
+		}
+
+		var separatorIndex = line.IndexOf('=');
+		if (separatorIndex <= 0)
+		{
+			continue;
+		}
+
+		var key = line[..separatorIndex].Trim();
+		var value = line[(separatorIndex + 1)..].Trim();
+
+		if (value.Length >= 2 && value.StartsWith('"') && value.EndsWith('"'))
+		{
+			value = value[1..^1];
+		}
+
+		if (value.Length >= 2 && value.StartsWith('\'') && value.EndsWith('\''))
+		{
+			value = value[1..^1];
+		}
+
+		settings[key] = value;
+	}
+
+	Console.WriteLine($"Loaded settings from {dotEnvPath}");
+
+	return settings;
+}
+
+static string? FindDotEnvFile()
+{
+	var startDirectories = new[]
+	{
+		Directory.GetCurrentDirectory(),
+		AppContext.BaseDirectory
+	};
+
+	foreach (var startDirectory in startDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
+	{
+		foreach (var directory in EnumerateDirectoryAndParents(startDirectory))
+		{
+			var candidate = Path.Combine(directory, ".env");
+			if (File.Exists(candidate))
+			{
+				return candidate;
+			}
+		}
+	}
+
+	return null;
+}
+
+static IEnumerable<string> EnumerateDirectoryAndParents(string startDirectory)
+{
+	var directory = new DirectoryInfo(startDirectory);
+	while (directory is not null)
+	{
+		yield return directory.FullName;
+		directory = directory.Parent;
+	}
+}
